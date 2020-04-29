@@ -1,7 +1,7 @@
 ﻿#include "Data.cginc"
 #pragma kernel FrustumCulling
 
-#define NUM_THREADS 2
+#define NUM_THREADS 1
 #define NUM_THREADS_X NUM_THREADS
 #define NUM_THREADS_Y NUM_THREADS
 
@@ -33,11 +33,12 @@ float PointInTriangle(int2 a, int2 b, int2 c, int2 p) {
 [numthreads(NUM_THREADS_X, NUM_THREADS_Y, 1)]
 void FrustumCulling(uint3 id : SV_DispatchThreadID)
 {
+    //sizebuffer:场景大小、检测面积大小(index)、检测起始点(index)
     float2 terrainSize = float2(sizeBuffer[0], sizeBuffer[1]);
     float2 threadSize = float2(sizeBuffer[2], sizeBuffer[3]);
     float2 startPos = float2(sizeBuffer[4], sizeBuffer[5]);
-    float2 startPos_c = GetConstrainedTileIndex(startPos);
-    float2 globIndex = startPos_c + id.xy;
+    //float2 startPos_c = GetConstrainedTileIndex(startPos);
+    float2 globIndex = startPos + id.xy;
     //int globIdFlattened = flattenId(globIndex, terrainSize);
     int count;
     uint hasGrass = PointInTriangle(frustumPosIndex[0], frustumPosIndex[1],

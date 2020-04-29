@@ -44,12 +44,14 @@ int2 getPosIndex(float2 pos) {
     return pos / _TileSize;
 }
 
+/*
 int2 GetConstrainedTileIndex(int2 index) {
     int2 res;
     res.x = clamp(index.x, 0, sizeBuffer[2]-2);
     res.y = clamp(index.y, 0, sizeBuffer[3]-2);
     return res;
 }
+*/
 
 ///theta [0,2PI]
 float3 RotateArbitraryLine(float3 v1, float3 v2, float3 pt, float theta)

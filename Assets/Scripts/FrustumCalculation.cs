@@ -83,15 +83,15 @@ public class FrustumCalculation {
 
         //Debug.Log(frusIndex[0].ToString() + "   " + frusIndex[1].ToString());
         calcShader.SetInts("frustumPosIndex", frustIndex);
-        var f = tBuilder.GetTileIndex(camBound.min);
+        var f = tBuilder.GetConstrainedTileIndex(camBound.min);
 
         threadSize = new Vector4(texSize.x, texSize.y,f.x,f.y);
         return camBound;
     }
 
     public void RunComputeShader() {
-        calcShader.Dispatch(frustumKernel, texSize.x / threadGroupSize.x,
-            texSize.y / threadGroupSize.y, 1);
+        calcShader.Dispatch(frustumKernel, texSize.x ,
+            texSize.y , 1);
     }
     
 
