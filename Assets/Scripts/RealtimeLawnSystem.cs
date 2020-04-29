@@ -1,7 +1,9 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.XR.WSA;
 
 public class RealtimeLawnSystem : MonoBehaviour {
     private Text fpsText;
@@ -12,7 +14,6 @@ public class RealtimeLawnSystem : MonoBehaviour {
     //all
     private ComputeBuffer sizeBuffer;
     private ComputeBuffer renderPosAppendBuffer;
-    private ComputeBuffer counterBuffer;
     //frustum
     public ComputeShader calcShader;
     //grass
@@ -72,7 +73,6 @@ public class RealtimeLawnSystem : MonoBehaviour {
 
         argsBuffer = new ComputeBuffer(1, sizeof(uint) * 5,
             ComputeBufferType.IndirectArguments);
-        counterBuffer = new ComputeBuffer(1, sizeof(uint), ComputeBufferType.Counter);
 
         SetShadowTexture();
         
@@ -99,6 +99,8 @@ public class RealtimeLawnSystem : MonoBehaviour {
 
         //更新buffer: indirect argument
         uint meshIndicesNum = grassMesh.GetIndexCount(0);
+
+        //vertex count per instance, instance count, start vertex location, and start instance location
         uint[] args = new uint[5] { meshIndicesNum, 0, 0, 0, 0 };
         /*if (argsBuffer != null)
             argsBuffer.Release();
@@ -116,13 +118,6 @@ public class RealtimeLawnSystem : MonoBehaviour {
         frustumCalc.SetBuffer("renderPosAppend", renderPosAppendBuffer);
         Shader.SetGlobalBuffer("renderPosAppend", renderPosAppendBuffer);
 
-        //更新counter
-        /*if (counterBuffer != null)
-            counterBuffer.Release();
-        counterBuffer = new ComputeBuffer(1, sizeof(uint), ComputeBufferType.Counter);*/
-        counterBuffer.SetCounterValue(20);
-        frustumCalc.SetBuffer("counter", counterBuffer);
-
         //更新LOD用数据
         grassMaterial.SetInt("maxGrassCount", grassAmountPerTile);
         grassMaterial.SetInt("minGrassCount", minGrassPerTile);
@@ -131,6 +126,52 @@ public class RealtimeLawnSystem : MonoBehaviour {
         grassMaterial.SetVector("camPos", new Vector4(pos.x, pos.y, pos.z, 0));
 
         frustumCalc.RunComputeShader();
+
+#if false
+
+        //bb的长度和renderPosAppendBuffer.count数量是不一致的
+        List<Vector3> bb = new List<Vector3>();
+        Array aa = System.Array.CreateInstance(typeof(Vector3), 2048);
+        renderPosAppendBuffer.GetData(aa);
+
+        for (int i =0; i < aa.Length; i++)
+        {
+            //bb[i] = (Vector3)aa.GetValue(i);
+            if (((Vector3)aa.GetValue(i)).y > 0)
+                bb.Add(((Vector3)aa.GetValue(i)));
+        }
+        bb.Sort((a, b) =>
+        {
+                if (a.x < b.x)
+                    return -1;
+                else if (Mathf.Approximately(a.x, b.x))
+                {
+                    if (a.z < b.z)
+                        return -1;
+                    else
+                        return 1;
+                }
+                else
+                    return 1;
+        });
+
+        string debugOutput = string.Empty;
+        for (int i = 0; i < 30 && i < bb.Count; i++)
+        {
+            debugOutput += new Vector2(bb[i].x, bb[i].z).ToString("f0") + ", ";
+        }
+
+        //Debug.Log(debugOutput);
+
+        
+        //Debug.Log(renderPosAppendBuffer.count);
+#endif
+
+        ComputeBuffer.CopyCount(renderPosAppendBuffer, argsBuffer, 4);
+//         Array indirectArray = System.Array.CreateInstance(typeof(uint), 5);
+// 
+//         argsBuffer.GetData(indirectArray);
+
         //render grass,TODO: LOD 64 32 16
         Graphics.DrawMeshInstancedIndirect(grassMesh,
             0, grassGen.grassMaterial, instanceBound, argsBuffer,0,null, UnityEngine.Rendering.ShadowCastingMode.TwoSided);
@@ -194,6 +235,5 @@ public class RealtimeLawnSystem : MonoBehaviour {
         argsBuffer.Release();
         sizeBuffer.Release();
         renderPosAppendBuffer.Release();
-        counterBuffer.Release();
     }
 }

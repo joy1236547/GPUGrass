@@ -5,8 +5,7 @@
 #define NUM_THREADS_X NUM_THREADS
 #define NUM_THREADS_Y NUM_THREADS
 
-float4 frustumPosIndex[2];//[0].xy, [0].zw, [1].xy
-RWStructuredBuffer<uint> counter;//计数器
+int2 frustumPosIndex[3];
 AppendStructuredBuffer<float3> renderPosAppend;
 
 struct Triangle {
@@ -39,15 +38,16 @@ void FrustumCulling(uint3 id : SV_DispatchThreadID)
     float2 startPos = float2(sizeBuffer[4], sizeBuffer[5]);
     float2 startPos_c = GetConstrainedTileIndex(startPos);
     float2 globIndex = startPos_c + id.xy;
-    int globIdFlattened = flattenId(globIndex, terrainSize);
+    //int globIdFlattened = flattenId(globIndex, terrainSize);
     int count;
-    uint hasGrass = PointInTriangle(frustumPosIndex[0].xy, frustumPosIndex[0].zw,
-        frustumPosIndex[1].xy, globIndex);
+    uint hasGrass = PointInTriangle(frustumPosIndex[0], frustumPosIndex[1],
+        frustumPosIndex[2], globIndex);
 
     float3 f = float3(globIndex.x, hasGrass, globIndex.y);
     if (hasGrass) {
-        counter[0] = counter.IncrementCounter();//函数被封装，只能使用条件分支
-        indirectDataBuffer[1] = max(indirectDataBuffer[1], counter[0]);
+        //counter[0] = counter.IncrementCounter();//函数被封装，只能使用条件分支
+        //indirectDataBuffer[1] = max(indirectDataBuffer[1], counter[0]);
+        //indirectDataBuffer[1] = indirectDataBuffer[1] + 1;
         renderPosAppend.Append(f);
     }
 }

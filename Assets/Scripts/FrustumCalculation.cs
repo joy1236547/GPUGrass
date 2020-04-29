@@ -21,7 +21,7 @@ public class FrustumCalculation {
     public Bounds PrepareCamData(Camera camera, out Vector4 threadSize) {
         Vector3[] frustum = new Vector3[3];
         #region 获取视锥体frustum
-        float halfFOV = (camera.fieldOfView * 0.5f) * Mathf.Deg2Rad;
+        float halfFOV = (camera.fieldOfView * 0.5f) * Mathf.Deg2Rad;//竖着的
         float height = camera.farClipPlane * Mathf.Tan(halfFOV);
         float width = height * camera.aspect;
 
@@ -30,7 +30,7 @@ public class FrustumCalculation {
         vec += (camera.transform.forward * camera.farClipPlane);
         frustum[0] = camera.transform.position - camera.transform.forward * 5;
         frustum[1] = vec - camera.transform.right * 3;
-        frustum[2] = vec + 2 * widthDelta + camera.transform.right * 6;
+        frustum[2] = vec + 2 * widthDelta + camera.transform.right * 3;
         #endregion
         Bounds camBound = new Bounds(frustum[0], Vector3.zero);//相机包围盒
         for (int i = 1; i < frustum.Length; i++) {
@@ -43,13 +43,13 @@ public class FrustumCalculation {
         int digit = 0, newTexSizeX, newTexSizeY;
         #region 将frustumTexSize向上取整（二进制），eg: 9→16
         newTexSizeX = maxIndex.x - minIndex.x + 1;
-        for (int i = 31; i >= 0; i--)
-            if (((newTexSizeX >> i) & 1) == 1) { digit = i + 1; break; }
-        newTexSizeX = 1 << digit;
+//         for (int i = 31; i >= 0; i--)
+//             if (((newTexSizeX >> i) & 1) == 1) { digit = i + 1; break; }
+//         newTexSizeX = 1 << digit;
         newTexSizeY = maxIndex.y - minIndex.y + 1;
-        for (int i = 31; i >= 0; i--)
-            if (((newTexSizeY >> i) & 1) == 1) { digit = i + 1; break; }
-        newTexSizeY = 1 << digit;
+//         for (int i = 31; i >= 0; i--)
+//             if (((newTexSizeY >> i) & 1) == 1) { digit = i + 1; break; }
+//         newTexSizeY = 1 << digit;
         #endregion
         #region for test
         /*if (newTexSizeX != texSize.x || newTexSizeY != texSize.y) {
@@ -65,15 +65,24 @@ public class FrustumCalculation {
         texSize.x = newTexSizeX; texSize.y = newTexSizeY;
 
         //想传6个整数，但unity的computeShader.SetInts和SetFloats有问题
-        Vector4[] frusIndex = { Vector4.zero, Vector4.zero };
-        for (int i = 0; i < 3; i++) {
-            Vector2Int t = tBuilder.GetTileIndex(frustum[i]);
-            //t -= tBuilder.GetTileIndex(camBound.min);
-            frusIndex[i / 2] += new Vector4(t.x * Mathf.Abs(i - 1), t.y * Mathf.Abs(i - 1),
-                t.x * (i % 2), t.y * (i % 2));
-        }
+        //         Vector4[] frusIndex = { Vector4.zero, Vector4.zero };
+        //         for (int i = 0; i < 3; i++) {
+        //             Vector2Int t = tBuilder.GetTileIndex(frustum[i]);
+        //             //t -= tBuilder.GetTileIndex(camBound.min);
+        //             frusIndex[i / 2] += new Vector4(t.x * Mathf.Abs(i - 1), t.y * Mathf.Abs(i - 1),
+        //                 t.x * (i % 2), t.y * (i % 2));
+        //         }
+
+        //数据需要16-bytes对齐
+        //参考：https://docs.microsoft.com/zh-cn/windows/win32/direct3dhlsl/dx-graphics-hlsl-packing-rules
+        int[] frustIndex = { 
+            tBuilder.GetTileIndex(frustum[0]).x, tBuilder.GetTileIndex(frustum[0]).y, 0,0,
+            tBuilder.GetTileIndex(frustum[1]).x, tBuilder.GetTileIndex(frustum[1]).y, 0,0,
+            tBuilder.GetTileIndex(frustum[2]).x, tBuilder.GetTileIndex(frustum[2]).y, 0,0};
+
+
         //Debug.Log(frusIndex[0].ToString() + "   " + frusIndex[1].ToString());
-        calcShader.SetVectorArray(Shader.PropertyToID("frustumPosIndex"), frusIndex);
+        calcShader.SetInts("frustumPosIndex", frustIndex);
         var f = tBuilder.GetTileIndex(camBound.min);
 
         threadSize = new Vector4(texSize.x, texSize.y,f.x,f.y);
