@@ -14,7 +14,7 @@
 
         Pass {
 
-            Tags {"LightMode"="ForwardBase"}
+            Tags {"LightMode"="ForwardBase" "Queue"="AlphaTest" "IgnoreProjector"="True" "RenderType"="TransparentCutout"}
             AlphaToMask On
             Cull Off
 
@@ -49,7 +49,7 @@
                 float3 normal : TEXCOORD1;
                 float3 bladeInfo: TEXCOORD2;
                 //float4 shadowPos:TEXCOORD3;
-                float2 test: TEXCOORD4;
+                //float2 test: TEXCOORD4;
                 //SHADOW_COORDS(4)
             };
 
@@ -213,8 +213,10 @@
                 float3 wNormal = 0;
                 float2 basicShape;
                 //grass density
+                //返回的话就不显示了
                 fixed density = patchInfo.density;
                 if (patchInfo.density > getTerrainDensity(index.xz)) { return o; }
+                
                 //lod
                 float dist = abs(distance(camPos, worldStartPos.xyz));
                 int lodCount = (minGrassCount - maxGrassCount) / zFar * dist + maxGrassCount - 1;
@@ -248,6 +250,10 @@
                 fixed4 color = tex2D(_MainTex, i.uv)*_Color;
                 //color.r += _yellow * i.bladeInfo.y;
                 fixed4 alpha = tex2D(_AlphaTex, i.uv);
+
+                clip(alpha - 0.5);
+                //clip(-1);
+
                 //fixed shadow = SHADOW_ATTENUATION(i);
                 float3 lightDir = UnityWorldSpaceLightDir(i.pos);
                 //float x = abs(i.bladeInfo.x);

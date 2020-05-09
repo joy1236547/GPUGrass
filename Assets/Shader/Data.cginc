@@ -9,6 +9,7 @@ struct TerrainData {
 };
 
 //RWStructuredBuffer<TerrainData> terrainDataBuffer;
+//只读取R通道
 Texture2D<float> terrainHeightTex;
 Texture2D<float> terrainDensityTex;
 float terrainHeight;

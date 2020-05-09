@@ -40,5 +40,8 @@ public class RealtimeLawnSystemEditor : Editor {
             "Blade Section Count (Max)", script.bladeSectionCountMax);
         script.bladeSectionCountMin = EditorGUILayout.IntField(
             "Blade Section Count (Min)", script.bladeSectionCountMin);
+
+        script.grassAmountPerTile = EditorGUILayout.IntField(
+            "grassAmountPerTile", script.grassAmountPerTile);
     }
 }

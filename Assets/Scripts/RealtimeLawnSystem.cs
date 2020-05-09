@@ -7,6 +7,7 @@ using UnityEngine.XR.WSA;
 
 public class RealtimeLawnSystem : MonoBehaviour {
     private Text fpsText;
+    private Text countText;
     private float deltaTime;
 
     public ComputeShader mathShader;
@@ -18,7 +19,7 @@ public class RealtimeLawnSystem : MonoBehaviour {
     public ComputeShader calcShader;
     //grass
     public Texture2D grassDensityMap;
-    private int grassAmountPerTile = 256;//实际渲染时每个Tile内最多的草叶数量
+    public int grassAmountPerTile = 256;//实际渲染时每个Tile内最多的草叶数量
     public int minGrassPerTile = 0;
     public int pregenerateGrassAmount = 1023;//预生成Patch草体总长度
     public Material grassMaterial;
@@ -38,8 +39,11 @@ public class RealtimeLawnSystem : MonoBehaviour {
     //indirect
     private ComputeBuffer argsBuffer;
     private Bounds instanceBound;
+    private bool mShowDrawCount = false;
+    private uint mDrawCount;
 
     void Awake() {
+        Debug.Log(" SystemInfo.supportsComputeShaders: " + SystemInfo.supportsComputeShaders); 
         //GenMathData();
         sizeBuffer = new ComputeBuffer(6, sizeof(float));
         float[] sizeBufferData = new float[6];
@@ -80,10 +84,14 @@ public class RealtimeLawnSystem : MonoBehaviour {
 
     private void Start() {
         fpsText = GameObject.Find("fpsText").GetComponent<Text>();
-		Application.targetFrameRate = -1;
+        countText = GameObject.Find("countText").GetComponent<Text>();
+        Application.targetFrameRate = -1;
+
+        Button mCountButton = GameObject.Find("CountButton").GetComponent<Button>();
+        mCountButton.onClick.AddListener(() => { mShowDrawCount = true; });
     }
 
-    void Update() {
+void Update() {
         //视锥体计算
         Vector4 frustumSize;
         instanceBound = frustumCalc.PrepareCamData(Camera.main, out frustumSize);
@@ -168,14 +176,21 @@ public class RealtimeLawnSystem : MonoBehaviour {
 #endif
 
         ComputeBuffer.CopyCount(renderPosAppendBuffer, argsBuffer, 4);
-//         Array indirectArray = System.Array.CreateInstance(typeof(uint), 5);
-// 
-//         argsBuffer.GetData(indirectArray);
+
 
         //render grass,TODO: LOD 64 32 16
         Graphics.DrawMeshInstancedIndirect(grassMesh,
             0, grassGen.grassMaterial, instanceBound, argsBuffer,0,null, UnityEngine.Rendering.ShadowCastingMode.TwoSided);
-        
+
+        if (mShowDrawCount)
+        {
+            mShowDrawCount = false;
+            Array indirectArray = System.Array.CreateInstance(typeof(uint), 5);
+
+            argsBuffer.GetData(indirectArray);
+            mDrawCount = (uint)(indirectArray.GetValue(1));
+        }
+
         ShowFPS();
     }
 
@@ -183,6 +198,8 @@ public class RealtimeLawnSystem : MonoBehaviour {
         deltaTime += (Time.deltaTime - deltaTime) * 0.1f;
         float fpsT = 1.0f / deltaTime;
         fpsText.text = Mathf.Ceil(fpsT).ToString();
+
+        countText.text = mDrawCount.ToString();
     }
 
     /*private void OnDrawGizmos() {
